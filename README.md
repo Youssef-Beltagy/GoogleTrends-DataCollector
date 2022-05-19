@@ -68,7 +68,7 @@ Proxy:
 - https://www.linkedin.com/pulse/how-eat-google-trends-python-real-time-igor-miazek/
 - https://www.scraperapi.com/blog/best-10-free-proxies-and-free-proxy-lists-for-web-scraping/
 
-## Next Steps:
+## Next Steps (Discussion Points):
 
 Proposed next steps:
 
@@ -77,6 +77,14 @@ Optimizations:
 - Review the code and identify bottlenecks + review assumptions
 - Brainstorm more optimized solutions
 - Use better search parameters
+
+**Discussion Points**
+- See Python Comments below
+- Use API: limited runs
+- Sort Optimization:
+  - Only sort -100 and 100 buckets or abs(val) > 90 buckets
+- Eval Optimization:
+  - Eval 5 at a time
 
 ```python
 # Sort using groups of four but in 2 buckets
@@ -91,11 +99,12 @@ Optimizations:
 # 1/(log(2) * 4) > 1/log(200)
 # 0.83048202372 > 0.43458798967
 
+
+### Current Approaches and possible optimizations
 # # Eliminating data
 # Currently comparing 5 items at a time
 # 
 # # Sorting  
-# Use four tickers in each call
 # group into 200 lists <-- currently used
     # Further, only sort the -100 and the 100 buckets
     # or buckets with abs(diff) > 90
