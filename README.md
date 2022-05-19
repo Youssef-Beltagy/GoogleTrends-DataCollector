@@ -104,6 +104,10 @@ Optimizations:
 # # Evaluating
 # Currently evaluating 1 by 1 for maximum resolution
 # Can be optimized by comparing 5 items at a time
+
+# # Implemented the PyTrends Wrapper to abstract away the PyTrends calling and caching logic
+# Cache was around 1.6 MegaBytes for 100 items in the data set
+# Cache might become ~100 MegaBytes for all ~9000 items in the data set
 ```
 
 API Call Limits: 7hrs
