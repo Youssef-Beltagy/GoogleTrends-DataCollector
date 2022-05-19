@@ -15,6 +15,10 @@ Input:
 - For all time
 - Granularity of time? --> monthly for the most part
 - Granularity of values? --> don't worry too much
+- Join CSVs, Make column with stock exchange code + Sort using
+  - No duplicates
+  - Stock + stock Exchange
+  - Which key to sort
 
 Output:
 - Excel Sheet
@@ -79,12 +83,24 @@ Optimizations:
 - Use better search parameters
 
 **Discussion Points**
-- See Python Comments below
-- Use API: limited runs
-- Sort Optimization:
-  - Only sort -100 and 100 buckets or abs(val) > 90 buckets
-- Eval Optimization:
-  - Eval 5 at a time
+- Clean Up Cache Saving --> but leave try catch
+- Cache would need to be deleted if you change the arguments
+
+- Updates
+  - Optimized The filtering
+  - Optimized the sorting --> ask for feedback -100/100 or abs(95)
+  - Should we optimize the evaluation?
+  - Still run out of API Calls for 100 items
+  - Still 0s for a single country's timeline
+  - Saves progress -- nothing will be lost as long as the computer doesn't suddenly shut down
+- API limit solutions
+  - Daemon --> takes a long time, hard to test, can/will be frustrating if it fails
+  - Proxy: Identified Scrapper API
+- Next Steps
+  - Cleanup 1/2 hours
+  - Making it a CLI 1/2 hours
+  - Get the api and run it --> see how long it takes
+  - Make a daemon if necessary
 
 ```python
 # Sort using groups of four but in 2 buckets
