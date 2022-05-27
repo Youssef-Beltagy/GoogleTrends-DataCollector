@@ -11,13 +11,12 @@ class PyTrendsWrapper:
     CACHE_FILENAME = "cache.yaml"
     CACHE_REQUEST_ARGS_KEY = "__REQUEST_ARGUMENTS__"  # key of the request args in the cache
 
-    def __init__(self, pytrends_kwargs, request_kwargs):
+    def __init__(self, pytrends_kwargs: dict[str, Any], request_kwargs: dict[str, Any]):
         self.pytrends_kwargs = pytrends_kwargs.copy()
         self.request_kwargs = request_kwargs.copy()
-        self.pytrends = None
-        self.cache = {}
+        self.pytrends = TrendReq(**self.pytrends_kwargs)
+        self.cache: dict[frozenset[str] | str, pd.DataFrame] = {}
 
-    def __enter__(self):
         if os.path.exists(PyTrendsWrapper.CACHE_FILENAME):
             with open(PyTrendsWrapper.CACHE_FILENAME, "r") as file:
                 self.cache = yaml.load(file, Loader=yaml.Loader)
@@ -25,12 +24,12 @@ class PyTrendsWrapper:
         # ensure cache is dict and is using the current request args
         if (not isinstance(self.cache, dict)
                 or PyTrendsWrapper.CACHE_REQUEST_ARGS_KEY not in self.cache
-                or sorted(self.cache[PyTrendsWrapper.CACHE_REQUEST_ARGS_KEY].items()) !=
-                sorted(self.request_kwargs.items())):
+                or self.cache[PyTrendsWrapper.CACHE_REQUEST_ARGS_KEY] != self.request_kwargs):
             self.cache = {PyTrendsWrapper.CACHE_REQUEST_ARGS_KEY: self.request_kwargs}
 
-        self.pytrends = TrendReq(**self.pytrends_kwargs)
+        self.cache: dict[frozenset[str] | str, pd.DataFrame] = self.cache
 
+    def __enter__(self):
         return self
 
     def __exit__(self, exception_type, exception_value, exception_traceback):
