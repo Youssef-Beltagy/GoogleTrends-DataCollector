@@ -12,7 +12,7 @@ class PyTrendsWrapper:
     CACHE_REQUEST_ARGS_KEY = "__REQUEST_ARGUMENTS__"  # key of the request args in the cache
 
     def __init__(self, pytrends_kwargs, request_kwargs):
-        self.pytrends_kwargs = pytrends_kwargs.copy() 
+        self.pytrends_kwargs = pytrends_kwargs.copy()
         self.request_kwargs = request_kwargs.copy()
         self.pytrends = None
         self.cache = {}
@@ -29,7 +29,7 @@ class PyTrendsWrapper:
                 sorted(self.request_kwargs.items())):
             self.cache = {PyTrendsWrapper.CACHE_REQUEST_ARGS_KEY: self.request_kwargs}
 
-        self.pytrends = TrendReq(**pytrends_kwargs)
+        self.pytrends = TrendReq(**self.pytrends_kwargs)
 
         return self
 
