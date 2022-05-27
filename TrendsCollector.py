@@ -12,7 +12,7 @@ class PyTrendsWrapper:
     A wrapper over pytrends that caches results into a file
     """
     CACHE_FILENAME = "cache.yaml"
-    CACHE_REQUEST_ARGS_KEY = "__REQUEST_ARGUMENTS__"  # key of the request args in the cache
+    CACHE_REQUEST_ARGS_KEY = frozenset(["__REQUEST_ARGUMENTS__"])  # key of the request args in the cache
 
     def __init__(self, pytrends_kwargs: dict[str, Any], request_kwargs: dict[str, Any]):
         """
@@ -23,7 +23,7 @@ class PyTrendsWrapper:
         self.pytrends_kwargs = pytrends_kwargs.copy()
         self.request_kwargs = request_kwargs.copy()
         self.pytrends = TrendReq(**pytrends_kwargs)
-        self.cache: dict[frozenset[str] | str, pd.DataFrame] = {}
+        self.cache: dict[frozenset[str], pd.DataFrame] = {}
 
         if os.path.exists(PyTrendsWrapper.CACHE_FILENAME):
             with open(PyTrendsWrapper.CACHE_FILENAME, "r") as file:
@@ -34,8 +34,6 @@ class PyTrendsWrapper:
                 or PyTrendsWrapper.CACHE_REQUEST_ARGS_KEY not in self.cache
                 or self.cache[PyTrendsWrapper.CACHE_REQUEST_ARGS_KEY] != self.request_kwargs):
             self.cache = {PyTrendsWrapper.CACHE_REQUEST_ARGS_KEY: self.request_kwargs}
-
-        self.cache: dict[frozenset[str] | str, pd.DataFrame] = self.cache
 
     def __enter__(self):
         return self
@@ -61,7 +59,7 @@ class PyTrendsWrapper:
 
 def optimized_sort(pytrends_wrapper: PyTrendsWrapper, input_list: list[str]):
     """
-    Fuzzy sorts input_list based on their GoogleTrends data
+    Partially sorts input_list based on their max GoogleTrends data
     :param pytrends_wrapper: The pytrends wrapper
     :param input_list: The input list with all the tickers
     :return:
@@ -99,7 +97,7 @@ def optimized_sort(pytrends_wrapper: PyTrendsWrapper, input_list: list[str]):
 
 def evaluate_data(pytrends_wrapper: PyTrendsWrapper, input_list: list[str]) -> pd.DataFrame:
     """
-    Compares each ticker with the next progressively to build the relative weights
+    Compares each ticker with the next, progressively, to build the relative weights
     :param pytrends_wrapper: The pytrends wrapper
     :param input_list: The input list with all the tickers
     :return: A DataFrame after all the re-weighting
@@ -215,10 +213,10 @@ def main():
         # Save the tokens which are not found in google trends
         pd.DataFrame(empty, columns=["Not Found Tokens"]).to_csv('empty.csv', index=False)
 
+        if not input_list:
+            raise ValueError("No Valid Tokens")
+        
         sorted_input = optimized_sort(pytrends_wrapper, input_list)
-
-        if not sorted_input:
-            raise ValueError("Could not generate input")
 
         data = evaluate_data(pytrends_wrapper, sorted_input)
 
