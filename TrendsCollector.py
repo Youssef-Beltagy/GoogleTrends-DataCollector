@@ -173,7 +173,7 @@ def parse_input() -> tuple[list[str], dict[str, Any], dict[str, Any]]:
     return input_list, pytrends_kwargs, request_kwargs
 
 
-if __name__ == "__main__":
+def main():
     input_list, pytrends_kwargs, request_kwargs = parse_input()
 
     with PyTrendsWrapper(pytrends_kwargs, request_kwargs) as pytrends_wrapper:
@@ -191,3 +191,7 @@ if __name__ == "__main__":
 
         # Save the output
         data.to_csv("output.csv")
+
+
+if __name__ == "__main__":
+    main()
