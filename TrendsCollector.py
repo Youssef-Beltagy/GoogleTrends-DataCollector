@@ -8,13 +8,21 @@ import os
 
 
 class PyTrendsWrapper:
+    """
+    A wrapper over pytrends that caches results into a file
+    """
     CACHE_FILENAME = "cache.yaml"
     CACHE_REQUEST_ARGS_KEY = "__REQUEST_ARGUMENTS__"  # key of the request args in the cache
 
     def __init__(self, pytrends_kwargs: dict[str, Any], request_kwargs: dict[str, Any]):
+        """
+        ctor
+        :param pytrends_kwargs: The keyword arguments to be passed to pytrends on init
+        :param request_kwargs: The keyword arguments to be passed to pytrends on payload build
+        """
         self.pytrends_kwargs = pytrends_kwargs.copy()
         self.request_kwargs = request_kwargs.copy()
-        self.pytrends = TrendReq(**self.pytrends_kwargs)
+        self.pytrends = TrendReq(**pytrends_kwargs)
         self.cache: dict[frozenset[str] | str, pd.DataFrame] = {}
 
         if os.path.exists(PyTrendsWrapper.CACHE_FILENAME):
@@ -33,10 +41,18 @@ class PyTrendsWrapper:
         return self
 
     def __exit__(self, exception_type, exception_value, exception_traceback):
+        """
+        Saves to the cache before exiting
+        """
         with open(PyTrendsWrapper.CACHE_FILENAME, "w") as file:
             yaml.dump(self.cache, file, Dumper=yaml.Dumper)
 
     def get(self, key: frozenset[str]) -> pd.DataFrame:
+        """
+        Gets the data from the cache or pytrends
+        :param key: The set of arguments to lookup
+        :return: A DataFrame with the resulting data
+        """
         if key not in self.cache:
             self.pytrends.build_payload(key, **self.request_kwargs)
             self.cache[key] = self.pytrends.interest_over_time()
@@ -44,6 +60,12 @@ class PyTrendsWrapper:
 
 
 def optimized_sort(pytrends_wrapper: PyTrendsWrapper, input_list: list[str]):
+    """
+    Fuzzy sorts input_list based on their GoogleTrends data
+    :param pytrends_wrapper: The pytrends wrapper
+    :param input_list: The input list with all the tickers
+    :return:
+    """
     if input_list is None or len(input_list) <= 1:
         return [] if input_list is None else input_list[:]
 
@@ -76,6 +98,12 @@ def optimized_sort(pytrends_wrapper: PyTrendsWrapper, input_list: list[str]):
 
 
 def evaluate_data(pytrends_wrapper: PyTrendsWrapper, input_list: list[str]) -> pd.DataFrame:
+    """
+    Compares each ticker with the next progressively to build the relative weights
+    :param pytrends_wrapper: The pytrends wrapper
+    :param input_list: The input list with all the tickers
+    :return: A DataFrame after all the re-weighting
+    """
     def concat_data(data, column):
         return pd.concat([data, column.astype(float)], axis=1)
 
@@ -95,6 +123,12 @@ def evaluate_data(pytrends_wrapper: PyTrendsWrapper, input_list: list[str]) -> p
 
 
 def eliminate_empty(pytrends_wrapper: PyTrendsWrapper, input_list: list[str]) -> tuple[list[str], list[str]]:
+    """
+    Eliminates the tickers with the empty Google Trends data
+    :param pytrends_wrapper: The pytrends wrapper
+    :param input_list: The input list with all the tickers
+    :return: The tickers with some data and the tickers with no data in separate lists
+    """
     input_deque = collections.deque(input_list)
     output = []
     empty = []
