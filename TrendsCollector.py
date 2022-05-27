@@ -1,44 +1,40 @@
 import argparse
 import collections
 from typing import Any
-
 import pandas as pd
 import yaml
 from pytrends.request import TrendReq
+import os
 
 
 class PyTrendsWrapper:
+    CACHE_FILENAME = "cache.yaml"
+    CACHE_REQUEST_ARGS_KEY = "__REQUEST_ARGUMENTS__"  # key of the request args in the cache
 
     def __init__(self, pytrends_kwargs, request_kwargs):
-        self.cache_filename = "cache.yaml"
-        self.pytrends_kwargs = pytrends_kwargs.copy()
+        self.pytrends_kwargs = pytrends_kwargs.copy() 
         self.request_kwargs = request_kwargs.copy()
         self.pytrends = None
         self.cache = {}
-        self.cache_request_args_key = "__REQUEST_ARGUMENTS__"
 
     def __enter__(self):
-
-        # Load the cache
-        try:
-            with open(self.cache_filename, "r") as file:
+        if os.path.exists(PyTrendsWrapper.CACHE_FILENAME):
+            with open(PyTrendsWrapper.CACHE_FILENAME, "r") as file:
                 self.cache = yaml.load(file, Loader=yaml.Loader)
-        except:
-            pass  # Cache doesn't exist
-        finally:
 
-            # ensure cache is dict and is using the current request args
-            if (not isinstance(self.cache, dict)
-                    or self.cache_request_args_key not in self.cache
-                    or sorted(self.cache[self.cache_request_args_key].items()) != sorted(self.request_kwargs.items())):
-                self.cache = {self.cache_request_args_key: self.request_kwargs}
+        # ensure cache is dict and is using the current request args
+        if (not isinstance(self.cache, dict)
+                or PyTrendsWrapper.CACHE_REQUEST_ARGS_KEY not in self.cache
+                or sorted(self.cache[PyTrendsWrapper.CACHE_REQUEST_ARGS_KEY].items()) !=
+                sorted(self.request_kwargs.items())):
+            self.cache = {PyTrendsWrapper.CACHE_REQUEST_ARGS_KEY: self.request_kwargs}
 
         self.pytrends = TrendReq(**pytrends_kwargs)
 
         return self
 
     def __exit__(self, exception_type, exception_value, exception_traceback):
-        with open(self.cache_filename, "w") as file:
+        with open(PyTrendsWrapper.CACHE_FILENAME, "w") as file:
             yaml.dump(self.cache, file, Dumper=yaml.Dumper)
 
     def get(self, key: frozenset[str]) -> pd.DataFrame:
