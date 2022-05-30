@@ -5,6 +5,7 @@ import pandas as pd
 import yaml
 from pytrends.request import TrendReq
 import os
+import logging
 
 
 class PyTrendsWrapper:
@@ -24,6 +25,7 @@ class PyTrendsWrapper:
         self.request_kwargs = request_kwargs.copy()
         self.pytrends = TrendReq(**pytrends_kwargs)
         self.cache: dict[frozenset[str], pd.DataFrame] = {}
+        self.call_count = 0
 
         if os.path.exists(PyTrendsWrapper.CACHE_FILENAME):
             with open(PyTrendsWrapper.CACHE_FILENAME, "r") as file:
@@ -54,6 +56,7 @@ class PyTrendsWrapper:
         if key not in self.cache:
             self.pytrends.build_payload(key, **self.request_kwargs)
             self.cache[key] = self.pytrends.interest_over_time()
+            self.call_count += 1
         return self.cache[key]
 
 
@@ -176,6 +179,8 @@ def parse_input() -> tuple[list[str], dict[str, Any], dict[str, Any]]:
 
     args = parser.parse_args()
 
+    logging.info(f"Arguments: {args}")
+
     # Loading the input
     input_list = pd.read_csv(args.input_file, header=None)[0].values.tolist()
     if 0 < args.n < len(input_list):
@@ -205,23 +210,49 @@ def parse_input() -> tuple[list[str], dict[str, Any], dict[str, Any]]:
 
 
 def main():
+
+    logging.basicConfig(filename='TrendsCollector.log', encoding='utf-8', level=logging.DEBUG)
+    logging.info("Starting")
+
     input_list, pytrends_kwargs, request_kwargs = parse_input()
+
+    logging.info(f"Input List Length: {len(input_list)}")
+    logging.info(f"PyTrends Connection Kwargs: {pytrends_kwargs}")
+    logging.info(f"PyTrends Request Kwargs: {request_kwargs}")
 
     with PyTrendsWrapper(pytrends_kwargs, request_kwargs) as pytrends_wrapper:
         input_list, empty = eliminate_empty(pytrends_wrapper, input_list)
 
+        logging.info("Filtered the Input List")
+        logging.info(f"Filtered Input List Length: {len(input_list)}")
+        logging.info(f"No Data Tokens: {len(empty)}")
+        logging.info(f"Number of PyTrends Requests After Filtering: {pytrends_wrapper.call_count}")
+
         # Save the tokens which are not found in google trends
-        pd.DataFrame(empty, columns=["Not Found Tokens"]).to_csv('empty.csv', index=False)
+        pd.DataFrame(empty, columns=["No Data Tokens"]).to_csv('empty.csv', index=False)
+
+        logging.info("Saved the empty tokens")
 
         if not input_list:
-            raise ValueError("No Valid Tokens")
+            logging.error("No Valid Tokens -- none of the tokens have google trends data")
+            raise ValueError("No Valid Tokens: Check log and empty.csv") 
         
         sorted_input = optimized_sort(pytrends_wrapper, input_list)
 
+        logging.info("Sorted the Input List")
+        logging.info(f"Number of PyTrends Requests After Sorting: {pytrends_wrapper.call_count}")
+        
         data = evaluate_data(pytrends_wrapper, sorted_input)
+
+        logging.info("Evaluated the Input List")
+        logging.info(f"Number of PyTrends Requests After Evaluating the Data: {pytrends_wrapper.call_count}")
+        logging.info(f"Data Shape: {data.shape}")
 
         # Save the output
         data.to_csv("output.csv")
+
+        logging.info("Saved the output")
+        logging.info("Done")
 
 
 if __name__ == "__main__":
