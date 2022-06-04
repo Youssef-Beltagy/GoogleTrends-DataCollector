@@ -1,6 +1,9 @@
 import argparse
 import collections
-from typing import Any
+from datetime import datetime
+import time
+from types import TracebackType
+from typing import Any, Optional, Type
 import pandas as pd
 import yaml
 from pytrends.request import TrendReq
@@ -40,12 +43,19 @@ class PyTrendsWrapper:
     def __enter__(self):
         return self
 
-    def __exit__(self, exception_type, exception_value, exception_traceback):
+    def __exit__(self, exception_type: Optional[Type[BaseException]], exception_value: Optional[BaseException], exception_traceback: Optional[TracebackType]) -> bool:
         """
         Saves to the cache before exiting
         """
         with open(PyTrendsWrapper.CACHE_FILENAME, "w") as file:
             yaml.dump(self.cache, file, Dumper=yaml.Dumper)
+
+        if exception_type or exception_value or exception_traceback:
+            logging.error(f"PyTrends Exception at {datetime.now()}")
+            logging.error(f"PyTrendsWrapper Call Count: {self.call_count}")
+            logging.error(f"PyTrendsWrapper Exception Type: {exception_type}")
+            logging.error(f"PyTrendsWrapper Exception Value: {exception_value}")
+            logging.error(f"PyTrendsWrapper Exception Traceback: {exception_traceback}")
 
     def get(self, key: frozenset[str]) -> pd.DataFrame:
         """
@@ -53,10 +63,13 @@ class PyTrendsWrapper:
         :param key: The set of arguments to lookup
         :return: A DataFrame with the resulting data
         """
+        logging.debug(f"PyTrends Request: {key}")
         if key not in self.cache:
+            logging.debug(f"PyTrends Request Not in Cache and Required Web Call: {key} -- number of web calls {self.call_count}")
             self.pytrends.build_payload(key, **self.request_kwargs)
             self.cache[key] = self.pytrends.interest_over_time()
             self.call_count += 1
+
         return self.cache[key]
 
 
@@ -190,12 +203,17 @@ def parse_input() -> tuple[list[str], dict[str, Any], dict[str, Any]]:
     pytrends_kwargs = {
         'hl': 'en-US',
         'tz': 360,
-        'retries': args.retries
+        'retries': args.retries,
+        'backoff_factor': 0.1,
+        'timeout':(15,30)
     }
     if args.scraperapi_token:
         pytrends_kwargs['proxies'] = [f"http://scraperapi:{args.scraperapi_token}@proxy-server.scraperapi.com:8001"]
     elif args.proxies:
         pytrends_kwargs['proxies'] = args.proxies.split(",")
+    
+    if 'proxies' in pytrends_kwargs:
+        pytrends_kwargs['requests_args'] = {'verify':False}
 
     # Loading PyTrends Request Arguments
     request_kwargs = {
@@ -211,48 +229,61 @@ def parse_input() -> tuple[list[str], dict[str, Any], dict[str, Any]]:
 
 def main():
 
-    logging.basicConfig(filename='TrendsCollector.log', encoding='utf-8', level=logging.DEBUG)
-    logging.info("Starting")
+    logging.basicConfig(filename='Collector.log', encoding='utf-8', level=logging.DEBUG)
 
-    input_list, pytrends_kwargs, request_kwargs = parse_input()
+    while(True):
+        starttime = datetime.now()
+        logging.info(f"Starting at {starttime}")
 
-    logging.info(f"Input List Length: {len(input_list)}")
-    logging.info(f"PyTrends Connection Kwargs: {pytrends_kwargs}")
-    logging.info(f"PyTrends Request Kwargs: {request_kwargs}")
+        input_list, pytrends_kwargs, request_kwargs = parse_input()
 
-    with PyTrendsWrapper(pytrends_kwargs, request_kwargs) as pytrends_wrapper:
-        input_list, empty = eliminate_empty(pytrends_wrapper, input_list)
+        logging.info(f"Input List Length: {len(input_list)}")
+        logging.info(f"PyTrends Connection Kwargs: {pytrends_kwargs}")
+        logging.info(f"PyTrends Request Kwargs: {request_kwargs}")
+        try:
+            with PyTrendsWrapper(pytrends_kwargs, request_kwargs) as pytrends_wrapper:
+                input_list, empty = eliminate_empty(pytrends_wrapper, input_list)
 
-        logging.info("Filtered the Input List")
-        logging.info(f"Filtered Input List Length: {len(input_list)}")
-        logging.info(f"No Data Tokens: {len(empty)}")
-        logging.info(f"Number of PyTrends Requests After Filtering: {pytrends_wrapper.call_count}")
+                logging.info("Filtered the Input List")
+                logging.info(f"Filtered Input List Length: {len(input_list)}")
+                logging.info(f"No Data Tokens: {len(empty)}")
+                logging.info(f"Number of PyTrends Requests After Filtering: {pytrends_wrapper.call_count}")
 
-        # Save the tokens which are not found in google trends
-        pd.DataFrame(empty, columns=["No Data Tokens"]).to_csv('empty.csv', index=False)
+                # Save the tokens which are not found in google trends
+                pd.DataFrame(empty, columns=["No Data Tokens"]).to_csv('empty.csv', index=False)
 
-        logging.info("Saved the empty tokens")
+                logging.info("Saved the empty tokens")
 
-        if not input_list:
-            logging.error("No Valid Tokens -- none of the tokens have google trends data")
-            raise ValueError("No Valid Tokens: Check log and empty.csv") 
-        
-        sorted_input = optimized_sort(pytrends_wrapper, input_list)
+                if not input_list:
+                    logging.error("No Valid Tokens -- none of the tokens have google trends data")
+                    break 
+                
+                sorted_input = optimized_sort(pytrends_wrapper, input_list)
 
-        logging.info("Sorted the Input List")
-        logging.info(f"Number of PyTrends Requests After Sorting: {pytrends_wrapper.call_count}")
-        
-        data = evaluate_data(pytrends_wrapper, sorted_input)
+                logging.info("Sorted the Input List")
+                logging.info(f"Number of PyTrends Requests After Sorting: {pytrends_wrapper.call_count}")
+                
+                data = evaluate_data(pytrends_wrapper, sorted_input)
 
-        logging.info("Evaluated the Input List")
-        logging.info(f"Number of PyTrends Requests After Evaluating the Data: {pytrends_wrapper.call_count}")
-        logging.info(f"Data Shape: {data.shape}")
+                logging.info("Evaluated the Input List")
+                logging.info(f"Number of PyTrends Requests After Evaluating the Data: {pytrends_wrapper.call_count}")
+                logging.info(f"Data Shape: {data.shape}")
 
-        # Save the output
-        data.to_csv("output.csv")
-
-        logging.info("Saved the output")
-        logging.info("Done")
+                # Save the output
+                data.to_csv("output.csv")
+                logging.info("Saved the output")
+                logging.info(f"Done at {datetime.now()}")
+                logging.info(f"Total Time: {datetime.now() - starttime}")
+                break
+        except KeyboardInterrupt:
+            logging.info("Keyboard Interrupt: Quitting")
+            print("Keyboard Interrupt: Quitting")
+            break
+        except Exception as e:
+            logging.error(f"Exception: {e}")
+            logging.error(f"Looping Again")
+            time.sleep(5)
+            continue
 
 
 if __name__ == "__main__":
