@@ -5,6 +5,7 @@ import time
 from types import TracebackType
 from typing import Any, Optional, Type
 import pandas as pd
+import urllib3
 import yaml
 from pytrends.request import TrendReq
 import os
@@ -214,6 +215,7 @@ def parse_input() -> tuple[list[str], dict[str, Any], dict[str, Any]]:
     
     if 'proxies' in pytrends_kwargs:
         pytrends_kwargs['requests_args'] = {'verify':False}
+        urllib3.disable_warnings()
 
     # Loading PyTrends Request Arguments
     request_kwargs = {
@@ -243,6 +245,11 @@ def main():
         try:
             with PyTrendsWrapper(pytrends_kwargs, request_kwargs) as pytrends_wrapper:
                 input_list, empty = eliminate_empty(pytrends_wrapper, input_list)
+
+                if "Tickers" in input_list:
+                    input_list.remove("Tickers")
+                if "Tickers" in empty:
+                    empty.remove("Tickers")
 
                 logging.info("Filtered the Input List")
                 logging.info(f"Filtered Input List Length: {len(input_list)}")

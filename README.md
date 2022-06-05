@@ -156,6 +156,15 @@ API Call Limits: 7hrs
   - https://www.sslproxies.org/ can try paid
   - https://www.proxynova.com/proxy-server-list -- a little hard to test programmatic access is inconvenient
 
+
+Other Options:
+- https://earthweb.com/residential-proxies/
+- https://earthweb.com/private-proxies/
+- https://app.privateproxy.me/package_subscriptions/new
+- https://proxy-seller.com/?partner=5XmcEjtWxM7J4C
+- https://blazingseollc.com/products/residential-proxies/
+- https://smartproxy.com/?x-clickref=1101ljkYsf7D
+
 ```python
 
 # # Proxy Testing Code
