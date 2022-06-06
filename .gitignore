@@ -1,7 +1,7 @@
 private
-cache.yaml
 output.csv
 empty.csv
 *.log
-cache*
+backup/
 .vscode/
+!cache.yaml
