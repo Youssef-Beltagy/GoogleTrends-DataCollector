@@ -71,8 +71,11 @@ class PyTrendsWrapper:
             self.cache[key] = self.pytrends.interest_over_time()
             self.call_count += 1
 
-        return self.cache[key]
+            if len(self.cache) % 20 == 0:
+                with open(f"backup/cache{len(self.cache)}.yaml", "w") as file:
+                    yaml.dump(self.cache, file, Dumper=yaml.Dumper)
 
+        return self.cache[key]
 
 def optimized_sort(pytrends_wrapper: PyTrendsWrapper, input_list: list[str]):
     """
@@ -149,16 +152,16 @@ def eliminate_empty(pytrends_wrapper: PyTrendsWrapper, input_list: list[str]) ->
     empty = []
 
     while input_deque:
-        cur_set = frozenset(input_deque.popleft() for _ in range(5) if input_deque)
+        cur_list = [input_deque.popleft() for _ in range(5) if input_deque]
 
-        data = pytrends_wrapper.get(cur_set)
+        data = pytrends_wrapper.get(frozenset(cur_list))
 
         # There is no Google Trends data for this search
         if data is None or data.empty:
-            empty.extend(cur_set)
+            empty.extend(cur_list)
             continue
 
-        for item in cur_set:
+        for item in cur_list:
             if data[item].max() != 0:
                 output.append(item)
             else:
@@ -246,7 +249,7 @@ def main():
             with PyTrendsWrapper(pytrends_kwargs, request_kwargs) as pytrends_wrapper:
                 input_list, empty = eliminate_empty(pytrends_wrapper, input_list)
 
-                if "Tickers" in input_list:
+                if "Tickers" in input_list: # FIXME: Delete later
                     input_list.remove("Tickers")
                 if "Tickers" in empty:
                     empty.remove("Tickers")
