@@ -2,6 +2,4 @@ private
 output.csv
 empty.csv
 *.log
-backup/
 .vscode/
-!cache.yaml
