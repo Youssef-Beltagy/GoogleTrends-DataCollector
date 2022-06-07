@@ -4,6 +4,7 @@ from datetime import datetime
 import time
 from types import TracebackType
 from typing import Any, Optional, Type
+from cv2 import log
 import pandas as pd
 import urllib3
 import yaml
@@ -96,6 +97,10 @@ def optimized_sort(pytrends_wrapper: PyTrendsWrapper, input_list: list[str]):
         cur_set = frozenset([pivot, val])
         data = pytrends_wrapper.get(cur_set)
 
+        if data is None or data.empty:
+            logging.error(f"Sorting: Should have no data {cur_set}")
+            continue
+
         diff = data[val].max() - data[pivot].max()
         # positive means val > pivot
         # negative means val < pivot
@@ -134,6 +139,15 @@ def evaluate_data(pytrends_wrapper: PyTrendsWrapper, input_list: list[str]) -> p
 
         next_val = input_list[i + 1]
         cur_data = pytrends_wrapper.get(frozenset([val, next_val]))
+
+        if cur_data[val].max() == 0:
+            logging.error(f"Evaluating: Should have no data {val}")
+            continue
+        if cur_data[next_val].max() == 0:
+            logging.error(f"Evaluating: Should have no data {next_val}")
+            continue
+
+
         data = concat_data(data, cur_data[val])
         data = data.multiply(cur_data[val].max() / cur_data[next_val].max())
 
@@ -291,10 +305,10 @@ def main():
             break
         except Exception as e:
             logging.error(f"Exception: {e}")
-            logging.error(f"Looping Again")
+            logging.error(f"Looping Again-- nay, exiting")
+            exit()
             time.sleep(5)
             continue
-
 
 if __name__ == "__main__":
     main()
