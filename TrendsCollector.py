@@ -4,7 +4,6 @@ from datetime import datetime
 import time
 from types import TracebackType
 from typing import Any, Optional, Type
-from cv2 import log
 import pandas as pd
 import urllib3
 import yaml
@@ -75,7 +74,7 @@ class PyTrendsWrapper:
             if len(self.cache) % 20 == 0:
                 with open(f"backup/cache{len(self.cache)}.yaml", "w") as file:
                     yaml.dump(self.cache, file, Dumper=yaml.Dumper)
-
+        
         return self.cache[key]
 
 def optimized_sort(pytrends_wrapper: PyTrendsWrapper, input_list: list[str]):
@@ -139,6 +138,11 @@ def evaluate_data(pytrends_wrapper: PyTrendsWrapper, input_list: list[str]) -> p
 
         next_val = input_list[i + 1]
         cur_data = pytrends_wrapper.get(frozenset([val, next_val]))
+
+        if (cur_data is None) or cur_data.empty:
+            logging.error(f"Evaluating: Should have no data {val}")
+            logging.error(f"Evaluating: Should have no data {next_val}")
+            continue
 
         if cur_data[val].max() == 0:
             logging.error(f"Evaluating: Should have no data {val}")
@@ -204,8 +208,8 @@ def parse_input() -> tuple[list[str], dict[str, Any], dict[str, Any]]:
     # Arguments for PyTrends request
     parser.add_argument("--timeframe", type=str, default='all', help="PyTrends Request Timeframe (default all)")
     parser.add_argument("--cat", type=int, default=16, help="PyTrends Request Category (default 16 for news)")
-    parser.add_argument("--gprop", type=str, default='news',
-                        help="PyTrends Request Google Property to filter for (default news)")
+    parser.add_argument("--gprop", type=str, default='',
+                        help="PyTrends Request Google Property to filter for (default web search)")
     parser.add_argument("--geo", type=str, default=None, help="PyTrends Request Location (default worldwide)")
 
     args = parser.parse_args()
