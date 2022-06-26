@@ -10,6 +10,7 @@ import yaml
 from pytrends.request import TrendReq
 import os
 import logging
+import redis
 
 
 class PyTrendsWrapper:
@@ -28,18 +29,23 @@ class PyTrendsWrapper:
         self.pytrends_kwargs = pytrends_kwargs.copy()
         self.request_kwargs = request_kwargs.copy()
         self.pytrends = TrendReq(**pytrends_kwargs)
-        self.cache: dict[frozenset[str], pd.DataFrame] = {}
         self.call_count = 0
 
-        if os.path.exists(PyTrendsWrapper.CACHE_FILENAME):
-            with open(PyTrendsWrapper.CACHE_FILENAME, "r") as file:
-                self.cache = yaml.load(file, Loader=yaml.Loader)
+        self.redis_cache = redis.Redis()
+        self.key_prefix = "Request Arguments: [" + ", ".join(str(t) for t in sorted(self.request_kwargs.items())) + "] -- "
 
-        # ensure cache is dict and is using the current request args
-        if (not isinstance(self.cache, dict)
-                or PyTrendsWrapper.CACHE_REQUEST_ARGS_KEY not in self.cache
-                or self.cache[PyTrendsWrapper.CACHE_REQUEST_ARGS_KEY] != self.request_kwargs):
-            self.cache = {PyTrendsWrapper.CACHE_REQUEST_ARGS_KEY: self.request_kwargs}
+
+
+        # self.cache: dict[frozenset[str], pd.DataFrame] = {}
+        # if os.path.exists(PyTrendsWrapper.CACHE_FILENAME):
+        #     with open(PyTrendsWrapper.CACHE_FILENAME, "r") as file:
+        #         self.cache = yaml.load(file, Loader=yaml.Loader)
+
+        # # ensure cache is dict and is using the current request args
+        # if (not isinstance(self.cache, dict)
+        #         or PyTrendsWrapper.CACHE_REQUEST_ARGS_KEY not in self.cache
+        #         or self.cache[PyTrendsWrapper.CACHE_REQUEST_ARGS_KEY] != self.request_kwargs):
+        #     self.cache = {PyTrendsWrapper.CACHE_REQUEST_ARGS_KEY: self.request_kwargs}
 
     def __enter__(self):
         return self
@@ -48,8 +54,8 @@ class PyTrendsWrapper:
         """
         Saves to the cache before exiting
         """
-        with open(PyTrendsWrapper.CACHE_FILENAME, "w") as file:
-            yaml.dump(self.cache, file, Dumper=yaml.Dumper)
+        # with open(PyTrendsWrapper.CACHE_FILENAME, "w") as file:
+        #     yaml.dump(self.cache, file, Dumper=yaml.Dumper)
 
         if exception_type or exception_value or exception_traceback:
             logging.error(f"PyTrends Exception at {datetime.now()}")
@@ -64,18 +70,22 @@ class PyTrendsWrapper:
         :param key: The set of arguments to lookup
         :return: A DataFrame with the resulting data
         """
-        logging.debug(f"PyTrends Request: {key}")
-        if key not in self.cache:
+        cache_key = self.key_prefix + "Keys: [" + ", ".join(sorted(key)) + "]"
+
+        logging.debug(f"PyTrends Request: {key} with cache key: {cache_key}")
+
+        if cache_key not in self.redis_cache:
             logging.debug(f"PyTrends Request Not in Cache and Required Web Call: {key} -- number of web calls {self.call_count}")
             self.pytrends.build_payload(key, **self.request_kwargs)
-            self.cache[key] = self.pytrends.interest_over_time()
+
+            self.redis_cache.set(cache_key, yaml.dump(self.pytrends.interest_over_time(), encoding='utf-8'))
             self.call_count += 1
 
-            if len(self.cache) % 20 == 0:
-                with open(f"backup/cache{len(self.cache)}.yaml", "w") as file:
-                    yaml.dump(self.cache, file, Dumper=yaml.Dumper)
+            # if len(self.cache) % 20 == 0:
+            #     with open(f"backup/cache{len(self.cache)}.yaml", "w") as file:
+            #         yaml.dump(self.cache, file, Dumper=yaml.Dumper)
         
-        return self.cache[key]
+        return yaml.load(self.redis_cache.get(cache_key), Loader=yaml.Loader)
 
 def optimized_sort(pytrends_wrapper: PyTrendsWrapper, input_list: list[str]):
     """
