@@ -3,3 +3,4 @@ output.csv
 empty.csv
 *.log
 .vscode/
+output
