@@ -2,13 +2,11 @@ import argparse
 import collections
 from datetime import datetime
 import time
-from types import TracebackType
-from typing import Any, Optional, Type
+from typing import Any
 import pandas as pd
 import urllib3
 import yaml
 from pytrends.request import TrendReq
-import os
 import logging
 import redis
 
