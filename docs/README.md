@@ -9,13 +9,13 @@ To setup this tool, you need [Docker](https://docs.docker.com/get-started/). If 
 Clone or download the repository.
 
 ```bash
-$ git clone https://github.com/Youssef-Beltagy/GoogleTrends-DataCollector.git
+git clone https://github.com/Youssef-Beltagy/GoogleTrends-DataCollector.git
 ```
 
 Then build the docker containers
 
 ```bash
-$ docker-compose up -d
+docker-compose up -d
 ```
 
 ## Run
@@ -25,14 +25,14 @@ To run the program, you need a one-column csv file of all the keywords you want 
 Then you can get terminal access to the docker container of the tool.
 
 ```bash
-$ docker exec -it trends_collector bash # Get interactive terminal access to the container
+docker exec -it trends_collector bash # Get interactive terminal access to the container
 ```
 
 Once you get terminal access to the container, move to the program's directory and run the program.
 
 ```bash
-$ cd collector-dir # move to the program directory inside the container
-$ python TrendsCollector.py sample_input.csv # run the program and pass it the input file name
+cd collector-dir # move to the program directory inside the container
+python TrendsCollector.py sample_input.csv # run the program and pass it the input file name
 ```
 At the end, you should get an output directory with five files
 - output.csv, the Google Trends data
@@ -48,7 +48,7 @@ To quit execution of the TrendsCollector, type Ctrl-C.
 Run this command on your machine (not inside the docker image) to take down the containers and their images.
 
 ```
-$ docker-compose down --rmi all
+docker-compose down --rmi all
 ```
 
 It is recommended to delete the cache.rdb file as well so it is not accidentally used in future iterations (see #changing-values).
@@ -75,6 +75,7 @@ This is the help prompt of this program.
 
 ```bash
 $ python TrendsCollector.py --help
+
 usage: TrendsCollector.py [-h] [-n N] [--four-col] [--retries {0,1,2,3,4}]
                           [--scraperapi-token SCRAPERAPI_TOKEN | --proxies PROXIES] [--timeframe TIMEFRAME] [--cat CAT]
                           [--gprop GPROP] [--geo GEO]
