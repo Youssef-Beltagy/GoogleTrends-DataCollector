@@ -6,8 +6,7 @@ services:
       - "redis"
     volumes:
       - ./:/collector-dir
-    command: bash -c "mkdir -p /collector-dir/output ; apt-get update -y && apt-get upgrade -y ; pip install redis pandas pytrends pyyaml" 
-    entrypoint: /bin/bash
+    command: bash -c "mkdir -p /collector-dir/output ; apt-get update -y && apt-get upgrade -y ; python -m pip install --upgrade pip ; pip install redis pandas pytrends pyyaml ; bash" 
     stdin_open: true
     tty: true     
   redis:

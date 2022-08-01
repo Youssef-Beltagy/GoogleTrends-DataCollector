@@ -329,7 +329,7 @@ def main():
         # Save the tokens which are not found in google trends
         pd.DataFrame(empty, columns=["No Data Tokens"]).to_csv(empty_file_name, index=False)
 
-        logging.info(f"Saved the empty tokens in {empty_file_name}")
+        print(f"Saved the empty tokens in {empty_file_name}")
 
         if not input_list:
             logging.error("No Valid Tokens -- none of the tokens have google trends data")

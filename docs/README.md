@@ -34,11 +34,12 @@ Once you get terminal access to the container, move to the program's directory a
 $ cd collector-dir # move to the program directory inside the container
 $ python TrendsCollector.py sample_input.csv # run the program and pass it the input file name
 ```
-At the end, you should get an output directory with four files
+At the end, you should get an output directory with five files
 - output.csv, the Google Trends data
 - empty.csv, all the search terms which Google Trends didn't have data for
 - Collector.log, the log of this program
 - cache.rdb, a snapshot of the redis database as a backup for intermediate results
+- redis.log, the log file of the redis database
 
 To quit execution of the TrendsCollector, type Ctrl-C.
 
@@ -66,7 +67,7 @@ If you rerun the program again later without deleting the cache, the old values 
 
 If the program exits because of retry errors, the reason is likely that Google started throttling requests from your ip. The best way to overcome this issue is to use a vpn like nordvpn and change your ip address. Alternatively, you can simply wait for 4-6 hours or pass a list of proxy servers as an argument to this program. However, proxy servers significantly slowed down this program's execution and reduced its reliability.
 
-You can then rerun the program. Intermediate values are saved in the redis database between program iterations. And even if you remove the docker containers, the redis database will be rebuilt from the snapshot in the output directory.
+You can then rerun the program (You don't have to setup the containers again: just run). Intermediate values are saved in the redis database between program iterations. And even if you rebuild the docker containers, the redis database will be rebuilt from the snapshot in the output directory.
 
 ## Help
 
