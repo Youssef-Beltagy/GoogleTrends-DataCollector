@@ -1,20 +1,19 @@
 services:
   collector:
     container_name: trends_collector
-    build:
-      dockerfile: dockerfile
-      context: .
+    image: python:latest
     depends_on:
       - "redis"
     volumes:
-      - ./output:/output
+      - ./:/collector-dir
+    command: bash -c "mkdir -p /collector-dir/output ; apt-get update -y && apt-get upgrade -y ; pip install redis pandas pytrends pyyaml" 
     entrypoint: /bin/bash
     stdin_open: true
-    tty: true
+    tty: true     
   redis:
     container_name: trends_redis
     image: redis:latest
     volumes:
-      - ./output:/redis/
+      - ./output:/output/
       - ./redis.conf:/redis.conf
     command: [ "redis-server", "/redis.conf" ]

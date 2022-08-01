@@ -1,6 +1,2 @@
-private
-output.csv
-empty.csv
-*.log
-.vscode/
+# Don't track the output folder
 output

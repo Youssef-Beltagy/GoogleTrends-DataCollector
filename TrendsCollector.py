@@ -298,6 +298,7 @@ def main():
     """
     
     output_file_name = "output/output.csv"
+    empty_file_name = "output/empty.csv"
     log_file_name = "output/Collector.log"
 
     logging.basicConfig(filename=log_file_name, encoding='utf-8', level=logging.DEBUG)
@@ -326,9 +327,9 @@ def main():
         print("Filtered the Input List")
 
         # Save the tokens which are not found in google trends
-        pd.DataFrame(empty, columns=["No Data Tokens"]).to_csv('output/empty.csv', index=False)
+        pd.DataFrame(empty, columns=["No Data Tokens"]).to_csv(empty_file_name, index=False)
 
-        logging.info("Saved the empty tokens")
+        logging.info(f"Saved the empty tokens in {empty_file_name}")
 
         if not input_list:
             logging.error("No Valid Tokens -- none of the tokens have google trends data")
@@ -358,6 +359,8 @@ def main():
             data.to_csv(output_file_name, index=False)
         else:
             data.to_csv(output_file_name)
+
+        print(f"Saved the data to {output_file_name}")
 
         logging.info("Saved the output")
         logging.info(f"Done at {datetime.now()}")
