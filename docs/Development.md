@@ -79,8 +79,10 @@ PyTrends:
 - https://hackernoon.com/how-to-use-google-trends-api-with-python
 - https://blog.devgenius.io/learn-how-to-easily-pull-google-trends-data-with-python-code-e52523c6ac1d
 - https://www.linkedin.com/pulse/how-eat-google-trends-python-real-time-igor-miazek/
+
 Pandas:
 - https://pandas.pydata.org/docs/user_guide/10min.html
+
 Redis:
 - https://realpython.com/python-redis/#using-redis-py-redis-in-python
 - https://redis.io/docs/getting-started/
