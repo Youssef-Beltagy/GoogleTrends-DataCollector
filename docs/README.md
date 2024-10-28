@@ -101,3 +101,7 @@ optional arguments:
   --gprop GPROP         PyTrends Request Google Property to filter for (default web search)
   --geo GEO             PyTrends Request Location (default worldwide)
 ```
+
+## Development:
+
+See: [Development.md](./Development.md)
